@@ -683,6 +683,7 @@ def asr_factory(args, logfile=sys.stderr):
         #asr = OpenaiApiASR(lan=args.lan)
     else:
         if backend == "faster-whisper":
+            logger.debug("Using FasterWhisper.")
             asr_cls = FasterWhisperASR
         #else:
             #asr_cls = WhisperTimestampedASR

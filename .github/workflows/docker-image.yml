@@ -25,7 +25,7 @@ jobs:
           run: docker build -t runpod-serverless .
         - name: Tag the Docker image
           run: |
-            docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME}}/runpod-serverless:latest
+            docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME}}/runpod-serverless:v38
 
         - name: push the docker image
           id: push-docker-image
