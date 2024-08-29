@@ -22,7 +22,7 @@ jobs:
             docker login -u $username -p $password 
         - name: build the docker image
           id: build-docker-image
-          run: docker build -t runpod-serverless
+          run: docker build -t runpod-serverless .
         - name: Tag the Docker image
           run: |
             docker tag runpod-serverless-forked:latest-temp ${{ secrets.DOCKER_HUB_USERNAME}}/runpod-serverless:latest
