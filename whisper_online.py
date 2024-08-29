@@ -684,6 +684,7 @@ def asr_factory(args, logfile=sys.stderr):
     else:
         if backend == "faster-whisper":
             logger.debug("Using FasterWhisper.")
+            print("using faster-whisper from whisper-online")
             asr_cls = FasterWhisperASR
         #else:
             #asr_cls = WhisperTimestampedASR

@@ -93,6 +93,7 @@ def transcribe(job):
 
 
 def transcribe_whisper_streaming(job):
+    print("in transcribe_whisper_streaming")
     datatype = job['input'].get('type', None)
     if not datatype:
         return {"error": "datatype field not provided. Should be 'blob' or 'url'."}
