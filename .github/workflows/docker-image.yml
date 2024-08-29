@@ -24,7 +24,7 @@ jobs:
           id: build-docker-image
           run: |
             ls -la 
-            docker build . -f Dockerfile -t dhruvin30/demo-image-test:latest
+            docker build . -f Dockerfile -t dhruvin30/runpod-serverless-forked:latest
         - name: push the docker image
           id: push-docker-image
-          run: docker push ${{secrets.DOCKER_HUB_USERNAME}}/demo-image-test:latest
+          run: docker push ${{secrets.DOCKER_HUB_USERNAME}}/runpod-serverless-forked:latest
