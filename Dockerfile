@@ -12,15 +12,16 @@ RUN python3 -c 'import faster_whisper; m = faster_whisper.WhisperModel("ivrit-ai
 
 # Add your file
 
-# Diagnostic step to check for CUDA and cuDNN libraries
-RUN echo "Checking for CUDA and cuDNN library paths..." \
-    && find / -name "libcudnn*" -or -name "libcublas*" -or -name "libcuda*" \
-    && echo "Completed check for CUDA/cuDNN libraries."
+# Define separate environment variables for each path
+ENV LIB_CUBLAS_PATH=/opt/conda/lib
+ENV LIB_TORCH_PATH=/opt/conda/lib/python3.10/site-packages/torch/lib
+ENV LIB_CTRANSLATE2_PATH=/opt/conda/lib/python3.10/site-packages/ctranslate2.libs
+ENV LIB_CUBLAS_PKG_PATH=/opt/conda/pkgs/libcublas-11.11.3.6-0/lib
+ENV LIB_CUDART_PKG_PATH=/opt/conda/pkgs/cuda-cudart-11.8.89-0/lib
+ENV LIB_PYTORCH_PKG_PATH=/opt/conda/pkgs/pytorch-2.1.0-py3.10_cuda11.8_cudnn8.7.0_0/lib/python3.10/site-packages/torch/lib
 
-# Print the current LD_LIBRARY_PATH to verify its contents
-RUN echo "LD_LIBRARY_PATH is set to: $LD_LIBRARY_PATH"
-
-ENV LD_LIBRARY_PATH="/usr/local/lib/python3.9/site-packages/nvidia/cudnn/lib:/usr/local/lib/python3.9/site-packages/nvidia/cublas/lib"
+# Combine these variables into LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=$LIB_CUBLAS_PATH:$LIB_TORCH_PATH:$LIB_CTRANSLATE2_PATH:$LIB_CUBLAS_PKG_PATH:$LIB_CUDART_PKG_PATH:$LIB_PYTORCH_PKG_PATH
 
 ADD infer.py .
 ADD whisper_online.py .
