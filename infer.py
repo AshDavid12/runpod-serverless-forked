@@ -21,11 +21,7 @@ except Exception as e:
     logging.error(f"Unknown from exception- error to import whisper_online: {e}",exc_info=True)
 
 if torch.cuda.is_available():
-    num_gpus = torch.cuda.device_count()
-    logging.info(f"CUDA is available. Number of GPUs: {num_gpus}")
-    for i in range(num_gpus):
-        gpu_name = torch.cuda.get_device_name(i)
-        logging.info(f"GPU {i}: {gpu_name}")
+    logging.info(f"CUDA is available.")
 else:
     logging.info("CUDA is not available. Using CPU.")
 
