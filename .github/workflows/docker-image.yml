@@ -1,32 +1,49 @@
-name: Build Docker Image
+name: Build and Push Docker Image
 on:
   push:
     branches:
       - main
-jobs:
-    build:
-      name: push docker image to docker hub
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v4
-        - name: Set up Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: 20
-        - name: login to docker hub
-          id: docker-hub
-          env:
-            username: ${{secrets.DOCKER_HUB_USERNAME}}
-            password: ${{secrets.DOCKER_HUB_ACCESS_TOKEN}}
-          run: |
-            docker login -u $username -p $password 
-        - name: build the docker image
-          id: build-docker-image
-          run: docker build -t runpod-serverless .
-        - name: Tag the Docker image
-          run: |
-            docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME}}/runpod-serverless:v40
 
-        - name: push the docker image
-          id: push-docker-image
-          run: docker push ${{secrets.DOCKER_HUB_USERNAME}}/runpod-serverless:v40
+jobs:
+  build:
+    name: Build and Push Docker Image to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+        run: echo "Node.js setup complete"
+
+      - name: Login to Docker Hub
+        id: docker-hub
+        env:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          echo "Logging into Docker Hub..."
+          docker login -u "$username" -p "$password"
+          echo "Successfully logged into Docker Hub"
+
+      - name: Build the Docker image
+        id: build-docker-image
+        run: |
+          echo "Building the Docker image..."
+          docker build -t runpod-serverless .
+          echo "Docker image build completed"
+
+      - name: Tag the Docker image
+        run: |
+          echo "Tagging the Docker image..."
+          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v40
+          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v40"
+
+      - name: Push the Docker image
+        id: push-docker-image
+        run: |
+          echo "Pushing the Docker image to Docker Hub..."
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v40
+          echo "Docker image pushed successfully"
