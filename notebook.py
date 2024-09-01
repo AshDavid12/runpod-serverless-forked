@@ -22,7 +22,7 @@ RUNPOD_ENDPOINT_ID = os.getenv('RUNPOD_ENDPOINT_ID')
 RUNPOD_ENDPOINT_ID_B = os.getenv('RUNPOD_ENDPOINT_ID_B')
 
 # Log the status of loading environment variables
-if not OPENAI_API_KEY or not RUN_POD_API_KEY or not RUNPOD_ENDPOINT_ID_B:
+if not OPENAI_API_KEY or not RUN_POD_API_KEY or not RUNPOD_ENDPOINT_ID:
     logging.error("One or more environment variables are missing.")
 else:
     logging.info("Environment variables loaded successfully.")
@@ -45,7 +45,7 @@ logging.info("Runpod API key set successfully")
 # Initialize the Runpod endpoint
 try:
     logging.info("Initializing Runpod endpoint")
-    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID_B)
+    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID)
     logging.info("Runpod endpoint initialized successfully")
 except Exception as e:
     logging.error(f"Error initializing Runpod endpoint: {e}")
