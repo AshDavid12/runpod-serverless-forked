@@ -11,7 +11,7 @@ RUN python3 -c 'import faster_whisper; m = faster_whisper.WhisperModel("ivrit-ai
 
 # Add your file
 ADD infer.py .
-ADD whisper_online.py
+ADD whisper_online.py .
 
 
 ENV LOG_LEVEL=INFO
