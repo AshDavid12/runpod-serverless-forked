@@ -6,6 +6,7 @@ import tempfile
 import logging
 import torch
 import sys
+import requests
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
@@ -24,7 +25,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_name = 'ivrit-ai/faster-whisper-v2-d3-e3'
 model = faster_whisper.WhisperModel(model_name, device=device)
 
-import requests
+
 
 # Maximum data size: 200MB
 MAX_PAYLOAD_SIZE = 200 * 1024 * 1024

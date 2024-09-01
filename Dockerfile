@@ -4,7 +4,7 @@ FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
 # Define your working directory
 WORKDIR /
 
-COPY requirements.txt
+COPY requirements.txt .
 # Install runpod
 RUN pip install -r requirements.txt
 
