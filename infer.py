@@ -3,8 +3,17 @@ import runpod
 import base64
 import faster_whisper
 import tempfile
-
+import logging
 import torch
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Try to import the module
+try:
+    from whisper_online import *  # Replace 'some_module' with the actual module name
+    logging.info("Successfully imported whisper_online.")
+except ImportError as e:
+    logging.error(f"Failed to import whisper_online: {e}")
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
