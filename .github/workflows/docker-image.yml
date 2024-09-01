@@ -36,8 +36,8 @@ jobs:
       - name: Tag the Docker image
         run: |
           echo "Tagging the Docker image..."
-          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v43
-          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v43"
+          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v44
+          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v44"
 
       - name: Push the Docker image
         id: push-docker-image
