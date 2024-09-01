@@ -43,5 +43,5 @@ jobs:
         id: push-docker-image
         run: |
           echo "Pushing the Docker image to Docker Hub..."
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v40
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v41
           echo "Docker image pushed successfully"
