@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 import os
 import openai
 import logging
+import sys
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s',handlers=[logging.StreamHandler(sys.stdout)])
 # Set the logging level to DEBUG for more detailed output if needed
 # logging.getLogger().setLevel(logging.DEBUG)
 
@@ -19,9 +19,10 @@ load_dotenv('.env')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 RUN_POD_API_KEY = os.getenv('RUN_POD_API_KEY')
 RUNPOD_ENDPOINT_ID = os.getenv('RUNPOD_ENDPOINT_ID')
+RUNPOD_ENDPOINT_ID_B = os.getenv('RUNPOD_ENDPOINT_ID_B')
 
 # Log the status of loading environment variables
-if not OPENAI_API_KEY or not RUN_POD_API_KEY or not RUNPOD_ENDPOINT_ID:
+if not OPENAI_API_KEY or not RUN_POD_API_KEY or not RUNPOD_ENDPOINT_ID_B:
     logging.error("One or more environment variables are missing.")
 else:
     logging.info("Environment variables loaded successfully.")
@@ -44,7 +45,7 @@ logging.info("Runpod API key set successfully")
 # Initialize the Runpod endpoint
 try:
     logging.info("Initializing Runpod endpoint")
-    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID)
+    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID_B)
     logging.info("Runpod endpoint initialized successfully")
 except Exception as e:
     logging.error(f"Error initializing Runpod endpoint: {e}")

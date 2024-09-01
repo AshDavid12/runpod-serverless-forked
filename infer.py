@@ -5,15 +5,19 @@ import faster_whisper
 import tempfile
 import logging
 import torch
+import sys
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
 # Try to import the module
 try:
+    logging.info("attempting to load whisper online")
     from whisper_online import *  # Replace 'some_module' with the actual module name
     logging.info("Successfully imported whisper_online.")
 except ImportError as e:
-    logging.error(f"Failed to import whisper_online: {e}")
+    logging.error(f"Failed to import whisper_online: {e}",exc_info=True)
+except Exception as e:
+    logging.error(f"Unknown from exception- error to import whisper_online: {e}",exc_info=True)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
