@@ -8,6 +8,9 @@ COPY requirements.txt .
 # Install runpod
 RUN pip install -r requirements.txt
 
+# Ensure compatibility by force reinstalling the ctranslate2 version
+RUN pip install --force-reinstall ctranslate2==3.24.0
+
 RUN python3 -c 'import faster_whisper; m = faster_whisper.WhisperModel("ivrit-ai/faster-whisper-v2-d3-e3")'
 
 # Add your file
