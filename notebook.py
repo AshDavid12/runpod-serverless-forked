@@ -45,7 +45,7 @@ logging.info("Runpod API key set successfully")
 # Initialize the Runpod endpoint
 try:
     logging.info("Initializing Runpod endpoint")
-    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID)
+    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID_B)
     logging.info("Runpod endpoint initialized successfully")
 except Exception as e:
     logging.error(f"Error initializing Runpod endpoint: {e}")

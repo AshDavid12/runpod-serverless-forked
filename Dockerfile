@@ -5,9 +5,8 @@ from python:3.11.1-buster
 WORKDIR /
 
 # Install runpod
-RUN pip install runpod
-RUN pip install torch==2.3.1
-RUN pip install faster-whisper
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 RUN python3 -c 'import faster_whisper; m = faster_whisper.WhisperModel("ivrit-ai/faster-whisper-v2-d3-e3")'
 
