@@ -140,4 +140,60 @@ def transcribe_core(audio_file):
     return ret
 
 
-runpod.serverless.start({"handler": transcribe})
+#runpod.serverless.start({"handler": transcribe})
+
+def transcribe_whisper(job):
+    logging.info(f"in triscribe-whisper")
+    datatype = job['input'].get('type', None)
+    if not datatype:
+        return {"error": "datatype field not provided. Should be 'blob' or 'url'."}
+
+    if not datatype in ['blob', 'url']:
+        return {"error": f"datatype should be 'blob' or 'url', but is {datatype} instead."}
+
+    # Get the API key from the job input
+    api_key = job['input'].get('api_key', None)
+
+    with tempfile.TemporaryDirectory() as d:
+        audio_file = f'{d}/audio.mp3'
+
+        if datatype == 'blob':
+            mp3_bytes = base64.b64decode(job['input']['data'])
+            open(audio_file, 'wb').write(mp3_bytes)
+        elif datatype == 'url':
+            success = download_file(job['input']['url'], MAX_PAYLOAD_SIZE, audio_file, api_key)
+            if not success:
+                return {"error": f"Error downloading data from {job['input']['url']}"}
+        logging.info("Starting transcription process using transcribe_core_whisper.")
+        result = transcribe_core_whisper(audio_file)
+        logging.info(f"DONE: in triscribe-whisper")
+        return {'result': result}
+
+def transcribe_core_whisper(audio_file):
+    print('Transcribing...')
+
+    ret = {'segments': []}
+
+    try:
+        logging.debug(f"Transcribing audio file: {audio_file}")
+
+        segs, info = model.transcribe(audio_file, init_prompt="")
+        logging.info("Transcription completed successfully.")
+        for s in segs:
+            words = []
+            for w in s.words:
+                words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
+
+            seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
+                   'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
+            logging.debug(f"All segments processed. Final transcription result: {ret}")
+
+    except Exception as e:
+        # Log any exception that occurs during the transcription process
+        logging.error(f"Error during transcribe_core_whisper: {e}", exc_info=True)
+        return {"error": str(e)}
+    # Return the final result
+    logging.info("Transcription core function completed.")
+    return ret
+
+runpod.serverless.start({"handler": transcribe_whisper})
