@@ -187,6 +187,8 @@ def transcribe_core_whisper(audio_file):
             seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
                    'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
             logging.debug(f"All segments processed. Final transcription result: {ret}")
+            print(seg)
+            ret['segments'].append(seg)
 
     except Exception as e:
         # Log any exception that occurs during the transcription process
