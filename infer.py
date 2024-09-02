@@ -177,7 +177,7 @@ def transcribe_core_whisper(audio_file):
     try:
         logging.debug(f"Transcribing audio file: {audio_file}")
 
-        segs, info = model.transcribe(audio_file, init_prompt="")
+        segs = model.transcribe(audio_file, init_prompt="")
         logging.info("Transcription completed successfully.")
         for s in segs:
             words = []
