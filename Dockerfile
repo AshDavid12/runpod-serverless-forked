@@ -1,5 +1,5 @@
 # Include Python
-FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
+FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
 # Define your working directory
 WORKDIR /
@@ -20,8 +20,8 @@ RUN pip install -r requirements.txt
 # Add diagnostic commands to find library locations
 
 # Set PATH and LD_LIBRARY_PATH
-ENV PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/opt/conda/pkgs/pytorch-2.3.1-py3.10_cuda12.1_cudnn8.9.2_0/lib/python3.10/site-packages/torch/lib:${PATH}"
-ENV LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
+#ENV PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/opt/conda/pkgs/pytorch-2.3.1-py3.10_cuda12.1_cudnn8.9.2_0/lib/python3.10/site-packages/torch/lib:${PATH}"
+#ENV LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
 
 RUN echo $LD_LIBRARY_PATH
 
