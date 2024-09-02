@@ -1,6 +1,12 @@
 # Include Python
 FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
+# Install Python and pip
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    ln -s /usr/bin/pip3 /usr/bin/pip
+
 # Define your working directory
 WORKDIR /
 
