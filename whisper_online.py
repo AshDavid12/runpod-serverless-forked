@@ -11,6 +11,7 @@ import soundfile as sf
 import math
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
 
 @lru_cache
@@ -97,6 +98,7 @@ class ASRBase:
 #
 
 class FasterWhisperASR(ASRBase):
+    logging.info(f"In faster whisper ASR")
     """Uses faster-whisper library as the backend. Works much faster, appx 4-times (in offline mode). For GPU, it requires installation with a specific CUDNN version.
     """
 
@@ -105,6 +107,10 @@ class FasterWhisperASR(ASRBase):
     def load_model(self, modelsize=None, cache_dir=None, model_dir=None):
         from faster_whisper import WhisperModel
         #        logging.getLogger("faster_whisper").setLevel(logger.level)
+
+        logging.info("Starting model loading process...")
+        logging.debug(f"Model loading parameters - modelsize: {modelsize}, cache_dir: {cache_dir}, model_dir: {model_dir}")
+
         if model_dir is not None:
             logger.debug(
                 f"Loading whisper model from model_dir {model_dir}. modelsize and cache_dir parameters are not used.")
@@ -114,8 +120,17 @@ class FasterWhisperASR(ASRBase):
         else:
             raise ValueError("modelsize or model_dir parameter must be set")
 
+        try:
+            logging.info(f"Loading WhisperModel on device: ")
+            model = WhisperModel(model_size_or_path, device="cuda", compute_type="float16", download_root=cache_dir)
+            logging.info("Model loaded successfully.")
+        except Exception as e:
+            logging.error(f"An error occurred while loading the model: {e}", exc_info=True)
+            raise
+
+
         # this worked fast and reliably on NVIDIA L40
-        model = WhisperModel(model_size_or_path, device="cuda", compute_type="float16", download_root=cache_dir)
+        #model = WhisperModel(model_size_or_path, device="cuda", compute_type="float16", download_root=cache_dir)
 
         # or run on GPU with INT8
         # tested: the transcripts were different, probably worse than with FP16, and it was slightly (appx 20%) slower
@@ -127,13 +142,19 @@ class FasterWhisperASR(ASRBase):
         return model
 
     def transcribe(self, audio, init_prompt=""):
+        logging.info("Starting transcription process...")
+        logging.debug(f"Transcription parameters - language: {self.original_language}, initial_prompt: '{init_prompt}'")
 
-        # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
-        segments, info = self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
-                                               beam_size=5, word_timestamps=True, condition_on_previous_text=True,
-                                               **self.transcribe_kargs)
-        # print(info)  # info contains language detection result
-
+        try:
+            # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
+            segments, info = self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
+                                                   beam_size=5, word_timestamps=True, condition_on_previous_text=True,
+                                                   **self.transcribe_kargs)
+            logging.info("Transcription completed successfully.")
+            logging.debug(f"Transcription info: {info}")
+        except Exception as e:
+            logging.error(f"An error occurred during transcription: {e}", exc_info=True)
+            raise
         return list(segments)
 
     def ts_words(self, segments):

@@ -8,6 +8,8 @@ import torch
 import sys
 import requests
 
+import whisper_online
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
 # Try to import the module
@@ -29,7 +31,14 @@ else:
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 model_name = 'ivrit-ai/faster-whisper-v2-d3-e3'
-model = faster_whisper.WhisperModel(model_name, device=device)
+logging.info(f"Selected model name: {model_name}")
+#model = faster_whisper.WhisperModel(model_name, device=device)
+try:
+    logging.info(f"Attempting to initialize FasterWhisperASR with device: {device}")
+    model = whisper_online.FasterWhisperASR(modelsize=model_name,cache_dir=None,model_dir=None)
+    logging.info("FasterWhisperASR model initialized successfully.")
+except Exception as e:
+    logging.error(f"Falied to inilialize faster whisper model {e}")
 
 
 
