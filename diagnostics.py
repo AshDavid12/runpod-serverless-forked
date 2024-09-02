@@ -23,11 +23,7 @@ print("cuDNN version:", torch.backends.cudnn.version())
 cuda_libs = [
     "libcudnn_ops_infer.so.8",
     "libcudnn_ops_train.so.8",
-    "libcudnn.so.8",
-    "libcudart.so.11",
-    "libcublas.so.11",
-    "libcufft.so.11",
-    "libcurand.so.11"
+    "libcudnn.so.8"
 ]
 for lib in cuda_libs:
     print(f"Searching for {lib}...")
