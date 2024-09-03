@@ -30,7 +30,7 @@ else:
 # Read and encode the audio file
 try:
     logging.info("Reading audio file: me-hebrew.wav")
-    mp3_data = open('test_hebrew.wav', 'rb').read()
+    mp3_data = open('me-hebrew.wav', 'rb').read()
     logging.info("Encoding audio file to base64")
     data = base64.b64encode(mp3_data).decode('utf-8')
     payload = {'type': 'blob', 'data': data}
@@ -53,7 +53,7 @@ except Exception as e:
 # Run the endpoint synchronously with the payload
 try:
     logging.info("Running Runpod endpoint with payload")
-    res = ep.run_sync(payload)
+    res = ep.run(payload)
     logging.info(f"Runpod endpoint executed successfully. Response: {res}")
 except Exception as e:
     logging.error(f"Error running Runpod endpoint: {e}")
