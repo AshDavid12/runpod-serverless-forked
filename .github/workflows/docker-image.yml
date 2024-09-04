@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - main
+      - async
 
 jobs:
   build:
@@ -29,19 +29,19 @@ jobs:
       - name: Build the Docker image
         id: build-docker-image
         run: |
-          echo "Building the Docker image..."
+          echo "Building the Docker image async branch..."
           docker build -t runpod-serverless .
           echo "Docker image build completed"
 
       - name: Tag the Docker image
         run: |
           echo "Tagging the Docker image..."
-          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v65
-          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v65"
+          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v66
+          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v66"
 
       - name: Push the Docker image
         id: push-docker-image
         run: |
-          echo "Pushing the Docker image to Docker Hub..."
+          echo "Pushing the Docker image to Docker Hub async branch..."
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v65
           echo "Docker image pushed successfully"

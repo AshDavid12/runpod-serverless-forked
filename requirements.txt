@@ -3,3 +3,5 @@ librosa
 runpod
 faster-whisper
 torch==2.3.1
+asyncio
+aiohttp
