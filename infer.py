@@ -178,8 +178,14 @@ async def async_transcribe_whisper(job):
                 return
 
         logging.info("Starting transcription process using async_transcribe_core_whisper.")
+        output_collected = False
         async for result in async_transcribe_core_whisper(audio_file):
+            logging.info(f"yielding transcription result:{result}")
+            output_collected = True
             yield result
+
+        if not output_collected:
+            logging.warning("No transcription results were produced.")
         logging.info("DONE: in async_transcribe_whisper")
 
 
@@ -191,17 +197,23 @@ async def async_transcribe_core_whisper(audio_file):
     try:
         logging.debug(f"Transcribing audio file: {audio_file}")
         segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
-        logging.info("Transcription completed successfully.")
+        logging.info(f"Transcription completed successfully. Segments: {segs}")
+        if not segs:
+            logging.warning("No segments produced by transcription.")
         async for s in segs:
-            words = []
-            for w in s.words:
-                words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
+            if hasattr(s,'words'):
+                words = []
+                for w in s.words:
+                    words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
 
-            seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
-                   'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
-            logging.debug(f"Processed segment: {seg}")
-            ret['segments'].append(seg)
-            yield {'result': seg}  # Yield each segment as it is processed
+                seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
+                       'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
+                logging.info(f"Processed segment: {seg}")
+                ret['segments'].append(seg)
+                yield {'result': seg}  # Yield each segment as it is processed
+            else:
+                logging.warning(f"Segment has no 'words' attribute: {s}")
+                yield {"error": "Invalid segment format"}
 
     except Exception as e:
         logging.error(f"Error during async_transcribe_core_whisper: {e}", exc_info=True)
