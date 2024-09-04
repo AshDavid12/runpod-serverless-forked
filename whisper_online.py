@@ -147,20 +147,20 @@ class FasterWhisperASR(ASRBase):
         logging.debug(f"Transcription parameters - language: {self.original_language}, initial_prompt: '{init_prompt}'")
 
         try:
-            try:
-                logging.info("trying to use async for transcribe")
-                async for segment in self.async_transcribe(audio,init_prompt):
-                    logging.debug(f"processed segments: {segment}")
-                    yield segment
-            except TypeError:
-                logging.warning("model transcribe doesnt support async going for thread")
+            # try:
+            #     logging.info("trying to use async for transcribe")
+            #     async for segment in self.async_transcribe(audio,init_prompt):
+            #         logging.debug(f"processed segments: {segment}")
+            #         yield segment
+            # except TypeError:
+            #     logging.warning("model transcribe doesnt support async going for thread")
 
             # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
-                segments, info = await asyncio.to_thread (self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
-                                                   beam_size=5, word_timestamps=True, condition_on_previous_text=True,
-                                                   **self.transcribe_kargs))
-                for segment in segments:
-                    yield segment
+            segments, info = await asyncio.to_thread(self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
+                                               beam_size=5, word_timestamps=True, condition_on_previous_text=True,
+                                               **self.transcribe_kargs))
+            for segment in segments:
+                yield segment
             logging.info("model loaded using thread Transcription completed successfully.")
             logging.debug(f"Transcription info: {info}")
         except Exception as e:
