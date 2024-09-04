@@ -143,16 +143,17 @@ class FasterWhisperASR(ASRBase):
         return model
 
     async def transcribe(self, audio, init_prompt=""):
-        logging.info("Starting transcription process...")
+        logging.info("in whisper-online-transcribe-Starting transcription process...")
         logging.debug(f"Transcription parameters - language: {self.original_language}, initial_prompt: '{init_prompt}'")
 
         try:
             try:
-                async for segment in self.transcribe_async(audio,init_prompt):
+                logging.info("trying to use async for transcribe")
+                async for segment in self.async_transcribe(audio,init_prompt):
                     logging.debug(f"processed segments: {segment}")
                     yield segment
             except TypeError:
-                logging.warning("model transcribe foesnt support async going for thread")
+                logging.warning("model transcribe doesnt support async going for thread")
 
             # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
                 segments, info = await asyncio.to_thread (self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
@@ -167,13 +168,18 @@ class FasterWhisperASR(ASRBase):
             yield {"error":str(e)}
         #return list(segments)
     async def async_transcribe(self,audio,init_prompt=""):
-        logging.info("in async transcribe-internal helper")
-        segments, info = await self.model.transcribe(
+        logging.info("whisper-online-in async transcribe-internal helper")
+        try:
+            logging.info("async-trasncribe-try await model")
+            segments, info = await self.model.transcribe(
             self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
                                   beam_size=5, word_timestamps=True, condition_on_previous_text=True,
                                   **self.transcribe_kargs))
-        for segment in segments:
-            yield segment
+            for segment in segments:
+                yield segment
+        except Exception as e:
+            logging.error(f"whisper-online,failed in async-transcribe:{e}",exc_info=True)
+            yield {"error":str(e)}
 
     def ts_words(self, segments):
         o = []

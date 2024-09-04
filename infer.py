@@ -48,6 +48,7 @@ MAX_PAYLOAD_SIZE = 200 * 1024 * 1024
 
 
 async def download_file(url, max_size_bytes, output_filename, api_key=None):
+    logging.info("infer.py-in download file async")
     """
     Asynchronously download a file from a given URL with size limit and optional API key.
 
@@ -144,7 +145,7 @@ def transcribe_core(audio_file):
 
 # Asynchronous function to handle the transcribe job
 async def async_transcribe_whisper(job):
-    logging.info("In async_transcribe_whisper")
+    logging.info("infer.py-In async_transcribe_whisper")
 
     datatype = job['input'].get('type', None)
     if not datatype:
@@ -183,7 +184,7 @@ async def async_transcribe_whisper(job):
 
 
 async def async_transcribe_core_whisper(audio_file):
-    print('Transcribing async...')
+    print('infer.py-async trasncribe-core-whisper-Transcribing async...')
 
     ret = {'segments': []}
 
