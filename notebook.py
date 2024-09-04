@@ -47,10 +47,10 @@ logging.info("Runpod API key set successfully")
 
 
 async def run_async_endpoint():
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
         try:
             logging.info("Initializing Runpod AsyncioEndpoint")
-            endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID, session)
+            endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID_B, session)
             logging.info("Runpod AsyncioEndpoint initialized successfully")
         except Exception as e:
             logging.error(f"Error initializing Runpod AsyncioEndpoint: {e}")

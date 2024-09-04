@@ -195,7 +195,7 @@ async def async_transcribe_core_whisper(audio_file):
             logging.warning("model transcribe method doesnt support async using thread")
             segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
         logging.info("Transcription completed successfully.")
-        for s in segs:
+        async for s in segs:
             words = []
             for w in s.words:
                 words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
