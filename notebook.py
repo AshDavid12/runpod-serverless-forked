@@ -5,6 +5,9 @@ import os
 import openai
 import logging
 import sys
+from runpod import AsyncioEndpoint,AsyncioJob
+import asyncio
+import aiohttp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s',handlers=[logging.StreamHandler(sys.stdout)])
@@ -42,18 +45,51 @@ except Exception as e:
 runpod.api_key = RUN_POD_API_KEY
 logging.info("Runpod API key set successfully")
 
-# Initialize the Runpod endpoint
-try:
-    logging.info("Initializing Runpod endpoint")
-    ep = runpod.Endpoint(RUNPOD_ENDPOINT_ID)
-    logging.info("Runpod endpoint initialized successfully")
-except Exception as e:
-    logging.error(f"Error initializing Runpod endpoint: {e}")
 
-# Run the endpoint synchronously with the payload
-try:
-    logging.info("Running Runpod endpoint with payload")
-    res = ep.run(payload)
-    logging.info(f"Runpod endpoint executed successfully. Response: {res}")
-except Exception as e:
-    logging.error(f"Error running Runpod endpoint: {e}")
+async def run_async_endpoint():
+    async with aiohttp.ClientSession() as session:
+        try:
+            logging.info("Initializing Runpod AsyncioEndpoint")
+            endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID, session)
+            logging.info("Runpod AsyncioEndpoint initialized successfully")
+        except Exception as e:
+            logging.error(f"Error initializing Runpod AsyncioEndpoint: {e}")
+            return
+
+        try:
+            logging.info("Starting Runpod job asynchronously")
+            job = await endpoint.run(payload)
+            logging.info("Runpod job started successfully")
+        except Exception as e:
+            logging.error(f"Error starting Runpod job asynchronously: {e}")
+            return
+
+        # Polling job status
+        while True:
+            try:
+                status = await job.status()
+                logging.info(f"Current job status: {status}")
+
+                if status == "COMPLETED":
+                    try:
+                        output = await job.output()
+                        logging.info(f"Job output: {output}")
+                    except Exception as e:
+                        logging.error(f"Error retrieving job output: {e}")
+                    break  # Exit the loop once the job is completed
+
+                elif status in ["FAILED"]:
+                    logging.error("Job failed or encountered an error.")
+                    break
+
+                else:
+                    logging.info("Job in queue or processing. Waiting 3 seconds...")
+                    await asyncio.sleep(3)  # Wait for 3 seconds before polling again
+
+            except Exception as e:
+                logging.error(f"Error polling job status: {e}")
+                break
+
+
+# Directly run the async function when the script is executed
+asyncio.run(run_async_endpoint())

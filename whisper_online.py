@@ -5,6 +5,7 @@ import librosa
 from functools import lru_cache
 import time
 import logging
+import asyncio
 
 import io
 import soundfile as sf
@@ -141,21 +142,38 @@ class FasterWhisperASR(ASRBase):
         #        model = WhisperModel(modelsize, device="cpu", compute_type="int8") #, download_root="faster-disk-cache-dir/")
         return model
 
-    def transcribe(self, audio, init_prompt=""):
+    async def transcribe(self, audio, init_prompt=""):
         logging.info("Starting transcription process...")
         logging.debug(f"Transcription parameters - language: {self.original_language}, initial_prompt: '{init_prompt}'")
 
         try:
+            try:
+                async for segment in self.transcribe_async(audio,init_prompt):
+                    logging.debug(f"processed segments: {segment}")
+                    yield segment
+            except TypeError:
+                logging.warning("model transcribe foesnt support async going for thread")
+
             # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
-            segments, info = self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
+                segments, info = await asyncio.to_thread (self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
                                                    beam_size=5, word_timestamps=True, condition_on_previous_text=True,
-                                                   **self.transcribe_kargs)
-            logging.info("Transcription completed successfully.")
+                                                   **self.transcribe_kargs))
+                for segment in segments:
+                    yield segment
+            logging.info("model loaded using thread Transcription completed successfully.")
             logging.debug(f"Transcription info: {info}")
         except Exception as e:
             logging.error(f"An error occurred during transcription: {e}", exc_info=True)
-            raise
-        return list(segments)
+            yield {"error":str(e)}
+        #return list(segments)
+    async def async_transcribe(self,audio,init_prompt=""):
+        logging.info("in async transcribe-internal helper")
+        segments, info = await self.model.transcribe(
+            self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
+                                  beam_size=5, word_timestamps=True, condition_on_previous_text=True,
+                                  **self.transcribe_kargs))
+        for segment in segments:
+            yield segment
 
     def ts_words(self, segments):
         o = []

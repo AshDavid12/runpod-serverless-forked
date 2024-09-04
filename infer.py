@@ -7,8 +7,9 @@ import logging
 import torch
 import sys
 import requests
-
+import asyncio
 import whisper_online
+import aiohttp
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(sys.stdout)])
@@ -46,9 +47,9 @@ except Exception as e:
 MAX_PAYLOAD_SIZE = 200 * 1024 * 1024
 
 
-def download_file(url, max_size_bytes, output_filename, api_key=None):
+async def download_file(url, max_size_bytes, output_filename, api_key=None):
     """
-    Download a file from a given URL with size limit and optional API key.
+    Asynchronously download a file from a given URL with size limit and optional API key.
 
     Args:
     url (str): The URL of the file to download.
@@ -65,32 +66,31 @@ def download_file(url, max_size_bytes, output_filename, api_key=None):
         if api_key:
             headers['Authorization'] = f'Bearer {api_key}'
 
-        # Send a GET request
-        response = requests.get(url, stream=True, headers=headers)
-        response.raise_for_status()  # Raises an HTTPError for bad requests
 
-        # Get the file size if possible
-        file_size = int(response.headers.get('Content-Length', 0))
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                response.raise_for_status()
 
-        if file_size > max_size_bytes:
-            print(f"File size ({file_size} bytes) exceeds the maximum allowed size ({max_size_bytes} bytes).")
-            return False
+                file_size = int(response.headers.get('Content-Length', 0))
 
-        # Download and write the file
-        downloaded_size = 0
-        with open(output_filename, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                downloaded_size += len(chunk)
-                if downloaded_size > max_size_bytes:
-                    print(f"Download stopped: Size limit exceeded ({max_size_bytes} bytes).")
+                if file_size > max_size_bytes:
+                    logging.warning(f"File size ({file_size} bytes) exceeds the maximum allowed size ({max_size_bytes} bytes).")
                     return False
-                file.write(chunk)
 
-        print(f"File downloaded successfully: {output_filename}")
+                downloaded_size = 0
+                with open(output_filename, 'wb') as file:
+                    async for chunk in response.content.iter_chunked(8192):
+                        downloaded_size += len(chunk)
+                        if downloaded_size > max_size_bytes:
+                            logging.warning(f"Download stopped: Size limit exceeded ({max_size_bytes} bytes).")
+                            return False
+                        file.write(chunk)
+
+        logging.info(f"File downloaded successfully: {output_filename}")
         return True
 
-    except requests.RequestException as e:
-        print(f"Error downloading file: {e}")
+    except aiohttp.ClientError as e:
+        logging.error(f"Error downloading file: {e}")
         return False
 
 
@@ -142,42 +142,58 @@ def transcribe_core(audio_file):
 
 #runpod.serverless.start({"handler": transcribe})
 
-def transcribe_whisper(job):
-    logging.info(f"in triscribe-whisper")
+# Asynchronous function to handle the transcribe job
+async def async_transcribe_whisper(job):
+    logging.info("In async_transcribe_whisper")
+
     datatype = job['input'].get('type', None)
     if not datatype:
-        return {"error": "datatype field not provided. Should be 'blob' or 'url'."}
+        yield {"error": "datatype field not provided. Should be 'blob' or 'url'."}
+        return
 
-    if not datatype in ['blob', 'url']:
-        return {"error": f"datatype should be 'blob' or 'url', but is {datatype} instead."}
+    if datatype not in ['blob', 'url']:
+        yield {"error": f"datatype should be 'blob' or 'url', but is {datatype} instead."}
+        return
 
-    # Get the API key from the job input
     api_key = job['input'].get('api_key', None)
 
     with tempfile.TemporaryDirectory() as d:
         audio_file = f'{d}/audio.mp3'
 
         if datatype == 'blob':
-            mp3_bytes = base64.b64decode(job['input']['data'])
-            open(audio_file, 'wb').write(mp3_bytes)
-        elif datatype == 'url':
-            success = download_file(job['input']['url'], MAX_PAYLOAD_SIZE, audio_file, api_key)
-            if not success:
-                return {"error": f"Error downloading data from {job['input']['url']}"}
-        logging.info("Starting transcription process using transcribe_core_whisper.")
-        result = transcribe_core_whisper(audio_file)
-        logging.info(f"DONE: in triscribe-whisper")
-        return {'result': result}
+            try:
+                mp3_bytes = base64.b64decode(job['input']['data'])
+                with open(audio_file, 'wb') as f:
+                    f.write(mp3_bytes)
+            except Exception as e:
+                logging.error(f"Error decoding blob data: {e}")
+                yield {"error": str(e)}
+                return
 
-def transcribe_core_whisper(audio_file):
-    print('Transcribing...')
+        elif datatype == 'url':
+            success = await download_file(job['input']['url'], MAX_PAYLOAD_SIZE, audio_file, api_key)
+            if not success:
+                yield {"error": f"Error downloading data from {job['input']['url']}"}
+                return
+
+        logging.info("Starting transcription process using async_transcribe_core_whisper.")
+        async for result in async_transcribe_core_whisper(audio_file):
+            yield result
+        logging.info("DONE: in async_transcribe_whisper")
+
+
+async def async_transcribe_core_whisper(audio_file):
+    print('Transcribing async...')
 
     ret = {'segments': []}
 
     try:
         logging.debug(f"Transcribing audio file: {audio_file}")
-
-        segs = model.transcribe(audio_file, init_prompt="")
+        try:
+            segs = await model.transcribe(audio_file, init_prompt="")
+        except TypeError:
+            logging.warning("model transcribe method doesnt support async using thread")
+            segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
         logging.info("Transcription completed successfully.")
         for s in segs:
             words = []
@@ -186,16 +202,18 @@ def transcribe_core_whisper(audio_file):
 
             seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
                    'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
-            logging.debug(f"All segments processed. Final transcription result: {ret}")
-            print(seg)
+            logging.debug(f"Processed segment: {seg}")
             ret['segments'].append(seg)
+            yield {'result': seg}  # Yield each segment as it is processed
 
     except Exception as e:
-        # Log any exception that occurs during the transcription process
-        logging.error(f"Error during transcribe_core_whisper: {e}", exc_info=True)
-        return {"error": str(e)}
+        logging.error(f"Error during async_transcribe_core_whisper: {e}", exc_info=True)
+        yield {"error": str(e)}
     # Return the final result
     logging.info("Transcription core function completed.")
-    return ret
 
-runpod.serverless.start({"handler": transcribe_whisper})
+
+
+runpod.serverless.start({"handler": async_transcribe_whisper,
+                         "return_aggregated_stream": True,
+                         })
