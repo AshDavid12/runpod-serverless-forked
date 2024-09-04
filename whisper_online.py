@@ -156,9 +156,9 @@ class FasterWhisperASR(ASRBase):
             #     logging.warning("model transcribe doesnt support async going for thread")
 
             # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
-            segments, info = await asyncio.to_thread(self.model.transcribe(audio, language=self.original_language, initial_prompt=init_prompt,
+            segments, info = await asyncio.to_thread(self.model.transcribe,audio, language=self.original_language, initial_prompt=init_prompt,
                                                beam_size=5, word_timestamps=True, condition_on_previous_text=True,
-                                               **self.transcribe_kargs))
+                                               **self.transcribe_kargs)
             for segment in segments:
                 yield segment
             logging.info("model loaded using thread Transcription completed successfully.")
