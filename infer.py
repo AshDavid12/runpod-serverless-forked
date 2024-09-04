@@ -180,8 +180,8 @@ async def async_transcribe_whisper(job):
         logging.info("Starting transcription process using async_transcribe_core_whisper.")
         output_collected = False
         async for result in async_transcribe_core_whisper(audio_file):
-            logging.info(f"yielding transcription result:{result}")
-            output_collected = True
+            #logging.info(f"yielding transcription result:{result}")
+            #output_collected = True
             yield result
 
         if not output_collected:
@@ -197,10 +197,8 @@ async def async_transcribe_core_whisper(audio_file):
     try:
         logging.debug(f"Transcribing audio file: {audio_file}")
         segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
-        logging.info(f"Transcription completed successfully. Segments: {segs}")
-        if not segs:
-            logging.warning("No segments produced by transcription.")
         async for s in segs:
+            logging.debug(f"Segment type: {type(s)}; Segment details: {s}")
             if hasattr(s,'words'):
                 words = []
                 for w in s.words:

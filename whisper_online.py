@@ -159,10 +159,7 @@ class FasterWhisperASR(ASRBase):
                 segments, info = await asyncio.to_thread(self.model.transcribe,audio, language=self.original_language, initial_prompt=init_prompt,
                                                beam_size=5, word_timestamps=True, condition_on_previous_text=True,
                                                **self.transcribe_kargs)
-                logging.info(f"Number of segments returned: {len(segments)}")
                 logging.debug(f"Transcription info: {info}")
-                if not segments:
-                    logging.warning("No segments produced by transcription.")
                 # Iterate through segments and yield each one, logging the content
                 for segment in segments:
                     logging.info(f"Yielding segment: {segment}")
