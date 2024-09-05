@@ -11,7 +11,7 @@ import asyncio
 import whisper_online
 import aiohttp
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(sys.stdout)])
 
 # Try to import the module
@@ -101,6 +101,7 @@ async def async_transcribe_whisper(job):
     logging.info("In async_transcribe_whisper")
 
     datatype = job['input'].get('type', None)
+    logging.info(f"data type is: {datatype}")
     if not datatype:
         yield {"error": "datatype field not provided. Should be 'blob' or 'url'."}
         return
@@ -116,9 +117,11 @@ async def async_transcribe_whisper(job):
 
         if datatype == 'blob':
             try:
-                mp3_bytes = base64.b64decode(job['input']['data'])
-                with open(audio_file, 'wb') as f:
-                    f.write(mp3_bytes)
+
+                audio_data = base64.b64decode(job['input']['data'])
+                logging.info(f"Audio blob decoded successfully, size: {len(audio_data)} bytes")
+                # with open(audio_file, 'wb') as f:
+                #     f.write(mp3_bytes)
             except Exception as e:
                 logging.error(f"Error decoding blob data: {e}")
                 yield {"error": str(e)}
@@ -132,8 +135,8 @@ async def async_transcribe_whisper(job):
 
         logging.info("Starting transcription process using async_transcribe_core_whisper.")
         output_collected = False
-        async for result in async_transcribe_core_whisper(audio_file):
-            #logging.info(f"yielding transcription result:{result}")
+        async for result in async_transcribe_core_whisper(audio_data):
+            logging.info(f"yielding transcription result:{result}")
             output_collected = True
             yield result
 
@@ -142,14 +145,14 @@ async def async_transcribe_whisper(job):
         logging.info("DONE: in async_transcribe_whisper")
 
 
-async def async_transcribe_core_whisper(audio_file):
+async def async_transcribe_core_whisper(audio_data):
     print('async trasncribe-core-whisper-Transcribing async...')
 
     ret = {'segments': []}
 
     try:
-        logging.debug(f"Transcribing audio file: {audio_file}")
-        segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
+        logging.debug(f"Transcribing audio file: {audio_data}")
+        segs = await asyncio.to_thread(model.transcribe,audio_data, init_prompt="")
         async for s in segs:
             logging.debug(f"Segment type: {type(s)}; Segment details: {s}")
             if hasattr(s,'words'):
@@ -171,11 +174,18 @@ async def async_transcribe_core_whisper(audio_file):
         yield {"error": str(e)}
 
     # Ensure final aggregation of all segments is yielded
-    if ret['segments']:
-        logging.info(f"Final transcription result: {ret}")
-        yield {"final_result": ret}
-    else:
-        logging.warning("No segments to return in final result.")
+    try:
+        logging.info("Reached final result check.")
+        sys.stdout.flush()
+        if ret['segments']:
+            logging.info(f"Final transcription result: {ret}")
+            sys.stdout.flush()
+            yield {"final_result": ret}
+        else:
+            logging.warning("No segments to return in final result.")
+            sys.stdout.flush()
+    except Exception as e:
+        logging.warning(f"error in final result check: {e}")
     # Return the final result
     logging.info("Transcription core function completed.")
 
