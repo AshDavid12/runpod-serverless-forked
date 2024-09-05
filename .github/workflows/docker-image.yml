@@ -36,12 +36,12 @@ jobs:
       - name: Tag the Docker image
         run: |
           echo "Tagging the Docker image..."
-          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v72
-          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v72"
+          docker tag runpod-serverless ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v73
+          echo "Docker image tagged as ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v73"
 
       - name: Push the Docker image
         id: push-docker-image
         run: |
           echo "Pushing the Docker image to Docker Hub async branch..."
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v72
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/runpod-serverless:v73
           echo "Docker image pushed successfully"

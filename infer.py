@@ -95,57 +95,10 @@ async def download_file(url, max_size_bytes, output_filename, api_key=None):
         return False
 
 
-def transcribe(job):
-    datatype = job['input'].get('type', None)
-    if not datatype:
-        return {"error": "datatype field not provided. Should be 'blob' or 'url'."}
-
-    if not datatype in ['blob', 'url']:
-        return {"error": f"datatype should be 'blob' or 'url', but is {datatype} instead."}
-
-    # Get the API key from the job input
-    api_key = job['input'].get('api_key', None)
-
-    with tempfile.TemporaryDirectory() as d:
-        audio_file = f'{d}/audio.mp3'
-
-        if datatype == 'blob':
-            mp3_bytes = base64.b64decode(job['input']['data'])
-            open(audio_file, 'wb').write(mp3_bytes)
-        elif datatype == 'url':
-            success = download_file(job['input']['url'], MAX_PAYLOAD_SIZE, audio_file, api_key)
-            if not success:
-                return {"error": f"Error downloading data from {job['input']['url']}"}
-
-        result = transcribe_core(audio_file)
-        return {'result': result}
-
-
-def transcribe_core(audio_file):
-    print('Transcribing...')
-
-    ret = {'segments': []}
-
-    segs, dummy = model.transcribe(audio_file, language='he', word_timestamps=True)
-    for s in segs:
-        words = []
-        for w in s.words:
-            words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
-
-        seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
-               'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
-
-        print(seg)
-        ret['segments'].append(seg)
-
-    return ret
-
-
-#runpod.serverless.start({"handler": transcribe})
 
 # Asynchronous function to handle the transcribe job
 async def async_transcribe_whisper(job):
-    logging.info("infer.py-In async_transcribe_whisper")
+    logging.info("In async_transcribe_whisper")
 
     datatype = job['input'].get('type', None)
     if not datatype:
@@ -190,7 +143,7 @@ async def async_transcribe_whisper(job):
 
 
 async def async_transcribe_core_whisper(audio_file):
-    print('infer.py-async trasncribe-core-whisper-Transcribing async...')
+    print('async trasncribe-core-whisper-Transcribing async...')
 
     ret = {'segments': []}
 
@@ -216,6 +169,13 @@ async def async_transcribe_core_whisper(audio_file):
     except Exception as e:
         logging.error(f"Error during async_transcribe_core_whisper: {e}", exc_info=True)
         yield {"error": str(e)}
+
+    # Ensure final aggregation of all segments is yielded
+    if ret['segments']:
+        logging.info(f"Final transcription result: {ret}")
+        yield {"final_result": ret}
+    else:
+        logging.warning("No segments to return in final result.")
     # Return the final result
     logging.info("Transcription core function completed.")
 

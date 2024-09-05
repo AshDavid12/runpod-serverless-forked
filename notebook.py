@@ -32,6 +32,7 @@ else:
 
 # Read and encode the audio file
 try:
+    logging.info("this changed")
     logging.info("Reading audio file: me-hebrew.wav")
     mp3_data = open('me-hebrew.wav', 'rb').read()
     logging.info("Encoding audio file to base64")
