@@ -33,8 +33,8 @@ else:
 # Read and encode the audio file
 try:
     logging.info("this changed")
-    logging.info("Reading audio file: me-hebrew.wav")
-    mp3_data = open('me-hebrew.wav', 'rb').read()
+    logging.info("Reading audio file: test_hebrew.wav")
+    mp3_data = open('test_hebrew.wav', 'rb').read()
     logging.info("Encoding audio file to base64")
     data = base64.b64encode(mp3_data).decode('utf-8')
     payload = {'type': 'blob', 'data': data}

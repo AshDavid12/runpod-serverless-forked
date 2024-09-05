@@ -134,7 +134,7 @@ async def async_transcribe_whisper(job):
         output_collected = False
         async for result in async_transcribe_core_whisper(audio_file):
             #logging.info(f"yielding transcription result:{result}")
-            #output_collected = True
+            output_collected = True
             yield result
 
         if not output_collected:
