@@ -1,12 +1,20 @@
+import io
 import socket
 import logging
 import asyncio
 import base64
+
+import librosa
+import numpy as np
 import runpod
 import aiohttp
 import os
+
+import soundfile
 from dotenv import load_dotenv
 import sys
+
+import line_packet
 
 host = 'localhost'
 port = 43007
@@ -31,38 +39,63 @@ if not RUN_POD_API_KEY or not RUNPOD_ENDPOINT_ID_B:
     logging.error("One or more environment variables are missing.")
     exit(1)
 
-
 # Define the Connection class for handling socket communication
 class Connection:
-    '''Handles TCP communication with the client'''
+    '''it wraps conn object'''
+    PACKET_SIZE = 32000*5*60  # 5 minutes
+
     def __init__(self, conn):
         self.conn = conn
+        self.last_line = ""
+
         self.conn.setblocking(True)
 
-    def receive_audio_chunk(self):
-        '''Receives raw audio chunks from the client'''
+    def send(self, line):
+        '''Send a line to the client, avoiding duplicates'''
+        if line == self.last_line:
+            return
+        line_packet.send_one_line(self.conn, line)
+        self.last_line = line
+
+    def receive_lines(self):
+        in_line = line_packet.receive_lines(self.conn)
+        return in_line
+
+    def non_blocking_receive_audio(self):
         try:
-            return self.conn.recv(CHUNK_SIZE)
+            r = self.conn.recv(self.PACKET_SIZE)
+            return r
         except ConnectionResetError:
             return None
 
-
 # Define the ServerProcessor class to handle incoming audio chunks
 class ServerProcessor:
-    def __init__(self, connection):
-        self.connection = connection
+    def __init__(self, c, min_chunk):
+        self.connection = c
+        self.is_first = True
         self.last_end = None
+        self.min_chunk = min_chunk
 
-    def process(self):
-        '''Processes audio chunks from the client'''
-        while True:
-            audio_chunk = self.connection.receive_audio_chunk()
-            if not audio_chunk:
+    def receive_audio_chunk(self):
+        # receive all audio that is available by this time
+        # blocks operation if less than self.min_chunk seconds is available
+        # unblocks if connection is closed or a chunk is available
+        out = []
+        minlimit = self.min_chunk * SAMPLING_RATE
+        while sum(len(x) for x in out) < minlimit:
+            raw_bytes = self.connection.non_blocking_receive_audio()
+            if not raw_bytes:
                 break
-            logger.info(f"Received audio chunk of size: {len(audio_chunk)} bytes")
-
-            # Forward the chunk to an external service (e.g., Runpod API)
-            asyncio.run(self.forward_audio_chunk_to_service(audio_chunk))
+            sf = soundfile.SoundFile(io.BytesIO(raw_bytes), channels=1, endian="LITTLE", samplerate=SAMPLING_RATE, subtype="PCM_16", format="RAW")
+            audio, _ = librosa.load(sf, sr=SAMPLING_RATE, dtype=np.float32)
+            out.append(audio)
+        if not out:
+            return None
+        conc = np.concatenate(out)
+        if self.is_first and len(conc) < minlimit:
+            return None
+        self.is_first = False
+        return np.concatenate(out)
 
     async def forward_audio_chunk_to_service(self, audio_chunk):
         '''Forward the audio chunk to an external transcription service using Runpod's AsyncioEndpoint'''
@@ -80,21 +113,14 @@ class ServerProcessor:
         # Set up an aiohttp session with a TCP connector to disable SSL if needed
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
             try:
-                try:
-                    logging.info("Initializing Runpod AsyncioEndpoint")
-                    endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID_B, session)
-                    logging.info("Runpod AsyncioEndpoint initialized successfully")
-                except Exception as e:
-                    logging.error(f"Error initializing Runpod AsyncioEndpoint: {e}")
-                    return
+                logging.info("Initializing Runpod AsyncioEndpoint")
+                endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID_B, session)
+                logging.info("Runpod AsyncioEndpoint initialized successfully")
 
-                try:
-                    logging.info("Starting Runpod job asynchronously")
-                    job = await endpoint.run(payload)
-                    logging.info("Runpod job started successfully")
-                except Exception as e:
-                    logging.error(f"Error starting Runpod job asynchronously: {e}")
-                    return
+                # Start the job asynchronously
+                logging.info("Starting Runpod job asynchronously")
+                job = await endpoint.run(payload)
+
                 # Polling job status
                 while True:
                     status = await job.status()
@@ -137,9 +163,21 @@ class ServerProcessor:
         if msg is not None:
             logger.info(f"Sending result: {msg}")
 
+    async def process(self):
+        # Handle one client connection asynchronously
+        while True:
+            audio_chunk = self.receive_audio_chunk()
+            if audio_chunk is None:
+                break
+            try:
+                # Send audio chunk to Runpod API for transcription
+                await self.forward_audio_chunk_to_service(audio_chunk)
+            except Exception as e:
+                logger.error(f"Error during transcription: {e}")
+                break
 
 # Define the server loop to handle incoming connections
-def start_server():
+async def start_server():
     '''Starts the TCP server and listens for connections'''
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, port))
@@ -150,11 +188,11 @@ def start_server():
             conn, addr = s.accept()
             logger.info(f"Connected to client at {addr}")
             connection = Connection(conn)
-            processor = ServerProcessor(connection)
-            processor.process()
+            processor = ServerProcessor(connection, 1)
+            await processor.process()
             conn.close()
             logger.info('Connection to client closed')
 
-
+# Run the async server
 if __name__ == "__main__":
-    start_server()
+    asyncio.run(start_server())
