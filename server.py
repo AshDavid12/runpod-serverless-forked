@@ -100,7 +100,11 @@ class ServerProcessor:
     async def forward_audio_chunk_to_service(self, audio_chunk):
         '''Forward the audio chunk to an external transcription service using Runpod's AsyncioEndpoint'''
         # Convert audio chunk to base64
-        audio_base64 = base64.b64encode(audio_chunk).decode('utf-8')
+        #audio_base64 = base64.b64encode(audio_chunk).decode('utf-8')
+        with io.BytesIO() as wav_buffer:
+            soundfile.write(wav_buffer, audio_chunk, SAMPLING_RATE, format='WAV')
+            wav_buffer.seek(0)
+            audio_base64 = base64.b64encode(wav_buffer.read()).decode('utf-8')
 
         # Payload to send to the service
         payload = {
@@ -119,6 +123,7 @@ class ServerProcessor:
 
                 # Start the job asynchronously
                 logging.info("Starting Runpod job asynchronously")
+                #logger.info(f"Payload being sent to Runpod: {payload}")
                 job = await endpoint.run(payload)
 
                 # Polling job status

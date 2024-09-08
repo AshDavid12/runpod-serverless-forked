@@ -99,7 +99,9 @@ async def download_file(url, max_size_bytes, output_filename, api_key=None):
 # Asynchronous function to handle the transcribe job
 async def async_transcribe_whisper(job):
     logging.info("In async_transcribe_whisper")
-
+    logging.info(f"Full job input: {job}")
+    if 'input' not in job:
+        logging.error("Job does not contain 'input' field")
     datatype = job['input'].get('type', None)
     logging.info(f"data type is: {datatype}")
     if not datatype:
