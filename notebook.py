@@ -10,7 +10,7 @@ import asyncio
 import aiohttp
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s',handlers=[logging.StreamHandler(sys.stdout)])
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s',handlers=[logging.StreamHandler(sys.stdout)])
 # Set the logging level to DEBUG for more detailed output if needed
 # logging.getLogger().setLevel(logging.DEBUG)
 
@@ -32,9 +32,8 @@ else:
 
 # Read and encode the audio file
 try:
-    logging.info("this changed")
     logging.info("Reading audio file: test_hebrew.wav")
-    mp3_data = open('test_hebrew.wav', 'rb').read()
+    mp3_data = open('me-hebrew.wav', 'rb').read()
     logging.info("Encoding audio file to base64")
     data = base64.b64encode(mp3_data).decode('utf-8')
     payload = {'type': 'blob', 'data': data}
@@ -51,7 +50,7 @@ async def run_async_endpoint():
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
         try:
             logging.info("Initializing Runpod AsyncioEndpoint")
-            endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID_B, session)
+            endpoint = runpod.AsyncioEndpoint(RUNPOD_ENDPOINT_ID, session)
             logging.info("Runpod AsyncioEndpoint initialized successfully")
         except Exception as e:
             logging.error(f"Error initializing Runpod AsyncioEndpoint: {e}")

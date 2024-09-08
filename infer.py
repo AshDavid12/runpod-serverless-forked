@@ -11,7 +11,7 @@ import asyncio
 import whisper_online
 import aiohttp
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(sys.stdout)])
 
 # Try to import the module
@@ -116,6 +116,7 @@ async def async_transcribe_whisper(job):
 
         if datatype == 'blob':
             try:
+                logging.info(f"type blob")
                 mp3_bytes = base64.b64decode(job['input']['data'])
                 with open(audio_file, 'wb') as f:
                     f.write(mp3_bytes)
@@ -151,7 +152,7 @@ async def async_transcribe_core_whisper(audio_file):
         logging.debug(f"Transcribing audio file: {audio_file}")
         segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
         async for s in segs:
-            logging.debug(f"Segment type: {type(s)}; Segment details: {s}")
+            logging.info(f"Segment type: {type(s)}; Segment details: {s}")
             if hasattr(s,'words'):
                 words = []
                 for w in s.words:
@@ -161,6 +162,8 @@ async def async_transcribe_core_whisper(audio_file):
                        'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
                 logging.info(f"Processed segment: {seg}")
                 ret['segments'].append(seg)
+                # Log the current state of ret['segments']
+                logging.info(f"Current state of ret['segments']: {ret['segments']}")
                 yield {'result': seg}  # Yield each segment as it is processed
             else:
                 logging.warning(f"Segment has no 'words' attribute: {s}")
@@ -178,6 +181,7 @@ async def async_transcribe_core_whisper(audio_file):
         logging.warning("No segments to return in final result.")
     # Return the final result
     logging.info("Transcription core function completed.")
+    sys.stdout.flush()
 
 
 
