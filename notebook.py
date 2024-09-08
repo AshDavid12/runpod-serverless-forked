@@ -33,7 +33,7 @@ else:
 # Read and encode the audio file
 try:
     logging.info("Reading audio file: test_hebrew.wav")
-    mp3_data = open('me-hebrew.wav', 'rb').read()
+    mp3_data = open('test_hebrew.wav', 'rb').read()
     logging.info("Encoding audio file to base64")
     data = base64.b64encode(mp3_data).decode('utf-8')
     payload = {'type': 'blob', 'data': data}
@@ -59,36 +59,40 @@ async def run_async_endpoint():
         try:
             logging.info("Starting Runpod job asynchronously")
             job = await endpoint.run(payload)
+            async for output in job.stream():
+                print(output)
             logging.info("Runpod job started successfully")
         except Exception as e:
             logging.error(f"Error starting Runpod job asynchronously: {e}")
             return
 
         # Polling job status
-        while True:
-            try:
-                status = await job.status()
-                logging.info(f"Current job status: {status}")
-
-                if status == "COMPLETED":
-                    try:
-                        output = await job.output()
-                        logging.info(f"Job output: {output}")
-                    except Exception as e:
-                        logging.error(f"Error retrieving job output: {e}")
-                    break  # Exit the loop once the job is completed
-
-                elif status in ["FAILED"]:
-                    logging.error("Job failed or encountered an error.")
-                    break
-
-                else:
-                    logging.info("Job in queue or processing. Waiting 3 seconds...")
-                    await asyncio.sleep(3)  # Wait for 3 seconds before polling again
-
-            except Exception as e:
-                logging.error(f"Error polling job status: {e}")
-                break
+        # while True:
+        #     try:
+        #         status = await job.status()
+        #         logging.info(f"Current job status: {status}")
+        #
+        #         if status == "COMPLETED":
+        #             try:
+        #                 output = await job.output()
+        #                 logging.info(f"Job output: {output}")
+        #             except Exception as e:
+        #                 logging.error(f"Error retrieving job output: {e}")
+        #             break  # Exit the loop once the job is completed
+        #
+        #         elif status in ["FAILED"]:
+        #             logging.error("Job failed or encountered an error.")
+        #             break
+        #
+        #         else:
+        #             logging.info("Job in queue or processing. Waiting 3 seconds...")
+        #             output = await job.output()
+        #             logging.info(f"Job output: {output}")
+        #             await asyncio.sleep(3)  # Wait for 3 seconds before polling again
+        #
+        #     except Exception as e:
+        #         logging.error(f"Error polling job status: {e}")
+        #         break
 
 
 # Directly run the async function when the script is executed
