@@ -96,6 +96,18 @@ async def download_file(url, max_size_bytes, output_filename, api_key=None):
 
 
 
+import wave
+
+def chunk_audio(file_path, chunk_size=1024):
+    """ Yield chunks of audio data from a WAV file """
+    with wave.open(file_path, 'rb') as wf:
+        while True:
+            data = wf.readframes(chunk_size)
+            if not data:
+                break  # End of file reached
+            yield data
+
+
 # Asynchronous function to handle the transcribe job
 async def async_transcribe_whisper(job):
     logging.info("In async_transcribe_whisper")
@@ -150,24 +162,25 @@ async def async_transcribe_core_whisper(audio_file):
 
     try:
         logging.debug(f"Transcribing audio file: {audio_file}")
-        segs = await asyncio.to_thread(model.transcribe,audio_file, init_prompt="")
-        async for s in segs:
-            logging.info(f"Segment type: {type(s)}; Segment details: {s}")
-            if hasattr(s,'words'):
-                words = []
-                for w in s.words:
-                    words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
+        for chunk in chunk_audio(audio_file):
+            segs = await asyncio.to_thread(model.transcribe,chunk, init_prompt="")
+            async for s in segs:
+                logging.info(f"Segment type: {type(s)}; Segment details: {s}")
+                if hasattr(s,'words'):
+                    words = []
+                    for w in s.words:
+                        words.append({'start': w.start, 'end': w.end, 'word': w.word, 'probability': w.probability})
 
-                seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
-                       'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
-                logging.info(f"Processed segment: {seg}")
-                ret['segments'].append(seg)
-                # Log the current state of ret['segments']
-                logging.info(f"Current state of ret['segments']: {ret['segments']}")
-                yield {'result': seg}  # Yield each segment as it is processed
-            else:
-                logging.warning(f"Segment has no 'words' attribute: {s}")
-                yield {"error": "Invalid segment format"}
+                    seg = {'id': s.id, 'seek': s.seek, 'start': s.start, 'end': s.end, 'text': s.text, 'avg_logprob': s.avg_logprob,
+                           'compression_ratio': s.compression_ratio, 'no_speech_prob': s.no_speech_prob, 'words': words}
+                    logging.info(f"Processed segment: {seg}")
+                    ret['segments'].append(seg)
+                    # Log the current state of ret['segments']
+                    logging.info(f"Current state of ret['segments']: {ret['segments']}")
+                    yield {'result': seg}  # Yield each segment as it is processed
+                else:
+                    logging.warning(f"Segment has no 'words' attribute: {s}")
+                    yield {"error": "Invalid segment format"}
 
     except Exception as e:
         logging.error(f"Error during async_transcribe_core_whisper: {e}", exc_info=True)
