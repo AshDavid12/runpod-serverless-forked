@@ -97,6 +97,7 @@ async def download_file(url, max_size_bytes, output_filename, api_key=None):
 
 
 import wave
+import tempfile
 
 def chunk_audio(file_path, chunk_size=1024):
     """ Yield chunks of audio data from a WAV file """
@@ -106,6 +107,11 @@ def chunk_audio(file_path, chunk_size=1024):
             if not data:
                 break  # End of file reached
             yield data
+            # Write chunk to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                temp_file.write(data)
+                temp_file.flush()
+                yield temp_file.name  # Yield the path to the temporary file
 
 
 # Asynchronous function to handle the transcribe job
