@@ -25,15 +25,15 @@ Prerequisites
 - GitHub Actions (for building the Docker image)
 - Runpod API Key
 
-Environment Variables
+#### Environment Variables
 Create a .env file and include the following variables:
 
-bash
-Copy code
-
+```bash
 RUN_POD_API_KEY=your_runpod_api_key
 RUNPOD_ENDPOINT_ID=your_runpod_endpoint_id
-Server-Side Setup
+``` 
+
+### Server-Side Setup
 
 Docker Image: The project uses a Docker image based on an NVIDIA CUDA image to utilize GPU acceleration. The Dockerfile is provided in the repository, and the image is built using GitHub Actions.  
 
@@ -43,7 +43,7 @@ Build the Docker image using GitHub Actions or a similar CI/CD pipeline.
 Deploy the Docker image on Runpod using the provided endpoint ID.
 Running the Server: The server runs the infer.py script, which handles the transcription asynchronously.  
 
-Client-Side Setup
+### Client-Side Setup
 Install Dependencies:  
 Clone the repository.  
 Install the necessary Python packages using pip or Poetry.  
